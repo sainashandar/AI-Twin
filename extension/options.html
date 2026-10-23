@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Continuity AI - Settings & Privacy</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: #09090b; color: #f4f4f5; padding: 32px; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #10b981; }
+    p { font-size: 13px; color: #a1a1aa; margin-bottom: 20px; }
+    .section { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    .section-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fafafa; }
+    label { display: block; font-size: 12px; color: #a1a1aa; margin-bottom: 6px; }
+    input[type="text"] { width: 100%; background: #27272a; border: 1px solid #3f3f46; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; }
+    .btn { background: #10b981; color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer; }
+    .btn:hover { background: #059669; }
+    .badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Continuity AI - Extension Settings</h1>
+  <p>Local-first browser continuity engine. Control your permissions, endpoints, and exclusions.</p>
+
+  <div class="section">
+    <div class="section-title">Local Engine Endpoint</div>
+    <label for="server-url">Backend Server URL</label>
+    <input type="text" id="server-url" value="http://localhost:3001" placeholder="http://localhost:3001">
+    <button id="save-server-btn" class="btn">Save Endpoint</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Privacy & Exclusions</div>
+    <p style="font-size: 12px; margin-bottom: 12px;">Sensitive domains like banks, password vaults, and authentication providers are excluded automatically:</p>
+    <div>
+      <span class="badge">accounts.google.com</span>
+      <span class="badge">chase.com</span>
+      <span class="badge">bankofamerica.com</span>
+      <span class="badge">paypal.com</span>
+      <span class="badge">1password.com</span>
+      <span class="badge">bitwarden.com</span>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

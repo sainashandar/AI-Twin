@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Local Databases & Sensitive Personal Storage (DO NOT COMMIT)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+server/*.db*
+continuity.db*
+
+# Environment Variables, Secrets & Credentials (DO NOT COMMIT)
+.env
+.env.*
+*.env
+*.pem
+*.key
+credentials.json
+token.json
+secrets/
+
+# Build Outputs
+dist/
+build/
+client/dist/
+server/dist/
+
+# Extension compiled bundles (rebuildable via node ./extension/build.js)
+extension/*.js
+!extension/build.js
+
+# Runtime Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test Coverage
+coverage/
+.nyc_output/
