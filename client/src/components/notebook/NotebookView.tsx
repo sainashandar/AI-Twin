@@ -14,10 +14,12 @@ import {
   ArrowRight,
   LayoutGrid,
   Layers,
-  Palette
+  Palette,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { NotebookCanvas } from './NotebookCanvas';
+import { NotebookCanvas, CanvasTheme } from './NotebookCanvas';
 
 interface NotebookViewProps {
   notes: Note[];
@@ -29,11 +31,22 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
   onRefresh
 }) => {
   const [viewMode, setViewMode] = useState<'canvas' | 'document'>('canvas');
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>(() => {
+    return (localStorage.getItem('continuity_canvas_theme') as CanvasTheme) || 'dark';
+  });
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(notes[0] || null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  const handleToggleTheme = () => {
+    setCanvasTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('continuity_canvas_theme', next);
+      return next;
+    });
+  };
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,11 +95,14 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
   };
 
   const activeNote = notes.find(n => n.id === selectedNote?.id) || notes[0];
+  const isLightCanvas = viewMode === 'canvas' && canvasTheme === 'light';
 
   return (
     <div className="flex flex-col h-full">
       {/* Top Bar with Mode Switcher & Quick Capture */}
-      <div className="p-4 px-6 border-b border-border bg-[#0d0d10]/90 backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0">
+      <div className={`p-4 px-6 border-b transition-colors duration-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shrink-0 ${
+        isLightCanvas ? 'bg-[#f5f4ef] border-zinc-200' : 'bg-[#0d0d10]/90 border-border backdrop-blur-md'
+      }`}>
         {/* Left: Quick Capture Bar */}
         <form onSubmit={handleCreateNote} className="flex-1 flex items-center gap-2 max-w-2xl">
           <input
@@ -94,7 +110,11 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
             placeholder="Jot down a thought, ambition, or meeting takeaway..."
             value={newNoteContent}
             onChange={(e) => setNewNoteContent(e.target.value)}
-            className="flex-1 px-3 py-1.5 bg-zinc-900 border border-border rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className={`flex-1 px-3 py-1.5 rounded-lg text-xs transition-colors focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+              isLightCanvas 
+                ? 'bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400' 
+                : 'bg-zinc-900 border border-border text-white placeholder-zinc-500'
+            }`}
           />
           <button
             type="submit"
@@ -106,31 +126,59 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
           </button>
         </form>
 
-        {/* Right: View Mode Toggle */}
-        <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800 self-end md:self-auto shrink-0">
-          <button
-            onClick={() => setViewMode('canvas')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-              viewMode === 'canvas'
-                ? 'bg-emerald-500 text-black font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Notebook Canvas</span>
-          </button>
+        {/* Right: Controls (Theme Toggle & View Mode Toggle) */}
+        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+          {viewMode === 'canvas' && (
+            <button
+              onClick={handleToggleTheme}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                isLightCanvas
+                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 shadow-sm'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800'
+              }`}
+              title={canvasTheme === 'light' ? 'Switch Canvas to Dark Mode' : 'Switch Canvas to Light Paper Mode'}
+            >
+              {canvasTheme === 'light' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+                  <span className="font-semibold text-xs">Light Paper</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+                  <span className="font-semibold text-xs">Dark Canvas</span>
+                </>
+              )}
+            </button>
+          )}
 
-          <button
-            onClick={() => setViewMode('document')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-              viewMode === 'document'
-                ? 'bg-emerald-500 text-black font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Document List</span>
-          </button>
+          <div className={`flex items-center gap-1 p-1 rounded-lg border transition-colors ${
+            isLightCanvas ? 'bg-zinc-200/80 border-zinc-300' : 'bg-zinc-900 border-zinc-800'
+          }`}>
+            <button
+              onClick={() => setViewMode('canvas')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'canvas'
+                  ? 'bg-emerald-500 text-black font-semibold shadow-sm'
+                  : (isLightCanvas ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-zinc-200')
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Canvas</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode('document')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'document'
+                  ? 'bg-emerald-500 text-black font-semibold shadow-sm'
+                  : (isLightCanvas ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-zinc-200')
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Document</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -140,6 +188,8 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
           notes={notes}
           onRefresh={onRefresh}
           onSelectNote={setSelectedNote}
+          theme={canvasTheme}
+          onToggleTheme={handleToggleTheme}
         />
       ) : (
         <div className="p-6 max-w-6xl mx-auto space-y-6 flex-1 overflow-y-auto">

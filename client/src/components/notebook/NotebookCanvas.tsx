@@ -17,28 +17,48 @@ import {
   CheckSquare, 
   ListPlus, 
   Layers, 
-  Maximize2,
+  Sun,
+  Moon,
   Grid
 } from 'lucide-react';
 import { api } from '../../services/api';
+
+export type CanvasTheme = 'dark' | 'light';
 
 interface NotebookCanvasProps {
   notes: Note[];
   onRefresh: () => void;
   onSelectNote?: (note: Note) => void;
+  theme?: CanvasTheme;
+  onToggleTheme?: () => void;
 }
 
 type ColorTheme = 'amber' | 'emerald' | 'indigo' | 'rose' | 'cyan' | 'slate';
 type GridStyle = 'dots' | 'lines' | 'grid' | 'clean';
 
-const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text: string; header: string; accent: string }> = {
+interface ColorTokens {
+  bg: string;
+  border: string;
+  tape: string;
+  text: string;
+  header: string;
+  accent: string;
+  line: string;
+  tagBg: string;
+  tagText: string;
+}
+
+const COLOR_MAP_DARK: Record<ColorTheme, ColorTokens> = {
   amber: {
     bg: 'bg-[#181611]',
     border: 'border-amber-500/30',
     tape: 'bg-amber-400/25 border-amber-400/40',
     text: 'text-amber-100',
     header: 'text-amber-300',
-    accent: '#f59e0b'
+    accent: '#f59e0b',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-amber-300/80'
   },
   emerald: {
     bg: 'bg-[#101713]',
@@ -46,7 +66,10 @@ const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text
     tape: 'bg-emerald-400/25 border-emerald-400/40',
     text: 'text-emerald-100',
     header: 'text-emerald-300',
-    accent: '#10b981'
+    accent: '#10b981',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-emerald-300/80'
   },
   indigo: {
     bg: 'bg-[#12131c]',
@@ -54,7 +77,10 @@ const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text
     tape: 'bg-indigo-400/25 border-indigo-400/40',
     text: 'text-indigo-100',
     header: 'text-indigo-300',
-    accent: '#6366f1'
+    accent: '#6366f1',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-indigo-300/80'
   },
   rose: {
     bg: 'bg-[#191114]',
@@ -62,7 +88,10 @@ const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text
     tape: 'bg-rose-400/25 border-rose-400/40',
     text: 'text-rose-100',
     header: 'text-rose-300',
-    accent: '#f43f5e'
+    accent: '#f43f5e',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-rose-300/80'
   },
   cyan: {
     bg: 'bg-[#0f171b]',
@@ -70,7 +99,10 @@ const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text
     tape: 'bg-cyan-400/25 border-cyan-400/40',
     text: 'text-cyan-100',
     header: 'text-cyan-300',
-    accent: '#06b6d4'
+    accent: '#06b6d4',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-cyan-300/80'
   },
   slate: {
     bg: 'bg-[#141416]',
@@ -78,15 +110,109 @@ const COLOR_MAP: Record<string, { bg: string; border: string; tape: string; text
     tape: 'bg-zinc-600/30 border-zinc-500/40',
     text: 'text-zinc-200',
     header: 'text-zinc-300',
-    accent: '#71717a'
+    accent: '#71717a',
+    line: 'rgba(255, 255, 255, 0.06)',
+    tagBg: 'bg-black/40',
+    tagText: 'text-zinc-400'
+  }
+};
+
+const COLOR_MAP_LIGHT: Record<ColorTheme, ColorTokens> = {
+  amber: {
+    bg: 'bg-[#fef9c3]',
+    border: 'border-amber-300/80',
+    tape: 'bg-amber-300/60 border-amber-400/70',
+    text: 'text-amber-950',
+    header: 'text-amber-800',
+    accent: '#d97706',
+    line: 'rgba(180, 83, 9, 0.12)',
+    tagBg: 'bg-amber-200/60',
+    tagText: 'text-amber-900'
+  },
+  emerald: {
+    bg: 'bg-[#dcfce7]',
+    border: 'border-emerald-300/80',
+    tape: 'bg-emerald-300/60 border-emerald-400/70',
+    text: 'text-emerald-950',
+    header: 'text-emerald-800',
+    accent: '#059669',
+    line: 'rgba(4, 120, 87, 0.12)',
+    tagBg: 'bg-emerald-200/60',
+    tagText: 'text-emerald-900'
+  },
+  indigo: {
+    bg: 'bg-[#e0e7ff]',
+    border: 'border-indigo-300/80',
+    tape: 'bg-indigo-300/60 border-indigo-400/70',
+    text: 'text-indigo-950',
+    header: 'text-indigo-800',
+    accent: '#4f46e5',
+    line: 'rgba(67, 56, 202, 0.12)',
+    tagBg: 'bg-indigo-200/60',
+    tagText: 'text-indigo-900'
+  },
+  rose: {
+    bg: 'bg-[#ffe4e6]',
+    border: 'border-rose-300/80',
+    tape: 'bg-rose-300/60 border-rose-400/70',
+    text: 'text-rose-950',
+    header: 'text-rose-800',
+    accent: '#e11d48',
+    line: 'rgba(190, 18, 60, 0.12)',
+    tagBg: 'bg-rose-200/60',
+    tagText: 'text-rose-900'
+  },
+  cyan: {
+    bg: 'bg-[#cffafe]',
+    border: 'border-cyan-300/80',
+    tape: 'bg-cyan-300/60 border-cyan-400/70',
+    text: 'text-cyan-950',
+    header: 'text-cyan-800',
+    accent: '#0891b2',
+    line: 'rgba(14, 116, 144, 0.12)',
+    tagBg: 'bg-cyan-200/60',
+    tagText: 'text-cyan-900'
+  },
+  slate: {
+    bg: 'bg-[#ffffff]',
+    border: 'border-zinc-300',
+    tape: 'bg-zinc-200/80 border-zinc-300/90',
+    text: 'text-zinc-900',
+    header: 'text-zinc-800',
+    accent: '#4b5563',
+    line: 'rgba(100, 116, 139, 0.12)',
+    tagBg: 'bg-zinc-100',
+    tagText: 'text-zinc-700'
   }
 };
 
 export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
   notes,
   onRefresh,
-  onSelectNote
+  onSelectNote,
+  theme: controlledTheme,
+  onToggleTheme: controlledToggleTheme
 }) => {
+  // Internal theme state if not controlled externally
+  const [internalTheme, setInternalTheme] = useState<CanvasTheme>(() => {
+    return (localStorage.getItem('continuity_canvas_theme') as CanvasTheme) || 'dark';
+  });
+
+  const canvasTheme = controlledTheme ?? internalTheme;
+
+  const toggleTheme = () => {
+    if (controlledToggleTheme) {
+      controlledToggleTheme();
+    } else {
+      const next = canvasTheme === 'dark' ? 'light' : 'dark';
+      setInternalTheme(next);
+      localStorage.setItem('continuity_canvas_theme', next);
+    }
+  };
+
+  const isLight = canvasTheme === 'light';
+  const colorMap = isLight ? COLOR_MAP_LIGHT : COLOR_MAP_DARK;
+
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -97,13 +223,18 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
   const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [localNotePositions, setLocalNotePositions] = useState<Record<string, { x: number; y: number }>>({});
-  const [penColor, setPenColor] = useState('#10b981');
+  const [penColor, setPenColor] = useState(isLight ? '#0f172a' : '#10b981');
   const [isDrawing, setIsDrawing] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // When theme changes, update default pen color if it was default
+  useEffect(() => {
+    setPenColor(isLight ? '#0f172a' : '#10b981');
+  }, [isLight]);
 
   // Sync positions from notes
   useEffect(() => {
@@ -124,7 +255,6 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Resize drawing canvas to container
     const resizeCanvas = () => {
       if (containerRef.current) {
         canvas.width = containerRef.current.clientWidth;
@@ -212,7 +342,6 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
     if (draggingNoteId) {
       const finalPos = localNotePositions[draggingNoteId];
       if (finalPos) {
-        // Persist final position to SQLite backend
         await api.updateNote(draggingNoteId, {
           position_x: Math.round(finalPos.x),
           position_y: Math.round(finalPos.y)
@@ -251,7 +380,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
   };
 
   const createQuickNoteAt = async (x: number, y: number, color: ColorTheme = 'amber') => {
-    const newNote = await api.createNote({
+    await api.createNote({
       title: 'New Thought',
       content: 'Write something here or click "⚡ Structure with AI" to generate a plan...',
       position_x: Math.round(x),
@@ -304,7 +433,6 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
   };
 
   const handleTidyCanvas = async () => {
-    // Arrange notes in organic, tidy columns
     const cols = Math.max(2, Math.floor(Math.sqrt(notes.length * 1.5)));
     const colWidth = 380;
     const rowHeight = 360;
@@ -324,20 +452,36 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
     onRefresh();
   };
 
-  // Get CSS background for chosen grid style
+  // Get CSS background for chosen grid style and theme
   const getGridBg = () => {
-    switch (gridStyle) {
-      case 'dots':
-        return 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px)';
-      case 'lines':
-        return 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)';
-      case 'grid':
-        return 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)';
-      case 'clean':
-      default:
-        return 'none';
+    if (isLight) {
+      switch (gridStyle) {
+        case 'dots':
+          return 'radial-gradient(circle, rgba(60, 64, 67, 0.16) 1.2px, transparent 1.2px)';
+        case 'lines':
+          return 'linear-gradient(rgba(70, 90, 130, 0.12) 1px, transparent 1px)';
+        case 'grid':
+          return 'linear-gradient(rgba(70, 90, 130, 0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 90, 130, 0.10) 1px, transparent 1px)';
+        case 'clean':
+        default:
+          return 'none';
+      }
+    } else {
+      switch (gridStyle) {
+        case 'dots':
+          return 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px)';
+        case 'lines':
+          return 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)';
+        case 'grid':
+          return 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)';
+        case 'clean':
+        default:
+          return 'none';
+      }
     }
   };
+
+  const canvasBgClass = isLight ? 'bg-[#f6f5f0]' : 'bg-[#0a0a0d]';
 
   return (
     <div
@@ -346,7 +490,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDoubleClick={handleDoubleClickCanvas}
-      className="relative w-full h-[calc(100vh-8.5rem)] overflow-hidden select-none bg-[#0a0a0d] cursor-default"
+      className={`relative w-full h-[calc(100vh-8.5rem)] overflow-hidden select-none cursor-default transition-colors duration-200 ${canvasBgClass}`}
       style={{
         backgroundImage: getGridBg(),
         backgroundSize: gridStyle === 'lines' ? '100% 24px' : '24px 24px',
@@ -360,26 +504,44 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
       />
 
       {/* Floating Canvas Toolbar */}
-      <div className="absolute top-4 left-6 z-30 flex items-center gap-2 p-1.5 rounded-xl bg-[#121215]/90 backdrop-blur-md border border-border shadow-elevated text-xs">
+      <div className={`absolute top-4 left-6 z-30 flex items-center gap-2 p-1.5 rounded-xl backdrop-blur-md shadow-elevated text-xs transition-colors duration-200 ${
+        isLight 
+          ? 'bg-white/95 border border-zinc-300 text-zinc-700 shadow-lg' 
+          : 'bg-[#121215]/90 border border-border text-zinc-300'
+      }`}>
         {/* Tool Selector */}
-        <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+        <div className={`flex items-center gap-1 p-1 rounded-lg border ${
+          isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
+        }`}>
           <button
             onClick={() => setActiveTool('select')}
-            className={`p-1.5 rounded-md transition-colors ${activeTool === 'select' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`p-1.5 rounded-md transition-colors ${
+              activeTool === 'select' 
+                ? (isLight ? 'bg-emerald-600 text-white font-semibold' : 'bg-emerald-500 text-black font-semibold')
+                : (isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white')
+            }`}
             title="Select & Move Thought Cards"
           >
             <Move className="w-4 h-4" />
           </button>
           <button
             onClick={() => setActiveTool('pan')}
-            className={`p-1.5 rounded-md transition-colors ${activeTool === 'pan' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`p-1.5 rounded-md transition-colors ${
+              activeTool === 'pan' 
+                ? (isLight ? 'bg-emerald-600 text-white font-semibold' : 'bg-emerald-500 text-black font-semibold')
+                : (isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white')
+            }`}
             title="Pan Hand Tool"
           >
             <Layers className="w-4 h-4" />
           </button>
           <button
             onClick={() => setActiveTool('pen')}
-            className={`p-1.5 rounded-md transition-colors ${activeTool === 'pen' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`p-1.5 rounded-md transition-colors ${
+              activeTool === 'pen' 
+                ? (isLight ? 'bg-emerald-600 text-white font-semibold' : 'bg-emerald-500 text-black font-semibold')
+                : (isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white')
+            }`}
             title="Freehand Sketch / Doodler Tool"
           >
             <PenTool className="w-4 h-4" />
@@ -388,18 +550,21 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
 
         {/* Pen tool options */}
         {activeTool === 'pen' && (
-          <div className="flex items-center gap-1.5 px-2 border-l border-border">
-            {['#10b981', '#f59e0b', '#6366f1', '#f43f5e', '#ffffff'].map((color) => (
+          <div className={`flex items-center gap-1.5 px-2 border-l ${isLight ? 'border-zinc-200' : 'border-border'}`}>
+            {(isLight 
+              ? ['#0f172a', '#047857', '#b45309', '#4338ca', '#e11d48'] 
+              : ['#10b981', '#f59e0b', '#6366f1', '#f43f5e', '#ffffff']
+            ).map((color) => (
               <button
                 key={color}
                 onClick={() => setPenColor(color)}
-                className={`w-4 h-4 rounded-full border ${penColor === color ? 'border-white scale-125' : 'border-transparent'}`}
+                className={`w-4 h-4 rounded-full border ${penColor === color ? (isLight ? 'border-zinc-900 scale-125' : 'border-white scale-125') : 'border-transparent'}`}
                 style={{ backgroundColor: color }}
               />
             ))}
             <button
               onClick={handleClearDrawings}
-              className="p-1 text-zinc-400 hover:text-red-400 ml-1"
+              className={`p-1 ml-1 ${isLight ? 'text-zinc-500 hover:text-red-500' : 'text-zinc-400 hover:text-red-400'}`}
               title="Clear sketches"
             >
               <Eraser className="w-3.5 h-3.5" />
@@ -407,7 +572,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
           </div>
         )}
 
-        <div className="h-4 w-px bg-border" />
+        <div className={`h-4 w-px ${isLight ? 'bg-zinc-200' : 'bg-border'}`} />
 
         {/* Quick Add Sticky Note */}
         <button
@@ -421,20 +586,30 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
         {/* Tidy / Auto-Layout */}
         <button
           onClick={handleTidyCanvas}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors ${
+            isLight
+              ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
+              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700'
+          }`}
           title="Auto-arrange notes cleanly"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span>Tidy Canvas</span>
         </button>
 
         {/* Grid pattern toggle */}
-        <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+        <div className={`flex items-center gap-1 p-1 rounded-lg border ${
+          isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
+        }`}>
           {(['dots', 'lines', 'grid', 'clean'] as GridStyle[]).map((style) => (
             <button
               key={style}
               onClick={() => setGridStyle(style)}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${gridStyle === style ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
+                gridStyle === style 
+                  ? (isLight ? 'bg-white text-zinc-900 shadow-sm font-semibold' : 'bg-zinc-700 text-white')
+                  : (isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-zinc-500 hover:text-zinc-300')
+              }`}
             >
               {style}
             </button>
@@ -442,10 +617,10 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
         </div>
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-1 text-zinc-400 px-1 font-mono text-[11px]">
+        <div className={`flex items-center gap-1 px-1 font-mono text-[11px] ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
           <button
             onClick={() => setZoom(z => Math.max(0.5, z - 0.15))}
-            className="p-1 hover:text-white"
+            className={`p-1 ${isLight ? 'hover:text-black' : 'hover:text-white'}`}
             title="Zoom out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
@@ -453,24 +628,51 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
           <span className="w-10 text-center">{Math.round(zoom * 100)}%</span>
           <button
             onClick={() => setZoom(z => Math.min(1.75, z + 0.15))}
-            className="p-1 hover:text-white"
+            className={`p-1 ${isLight ? 'hover:text-black' : 'hover:text-white'}`}
             title="Zoom in"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-            className="p-1 hover:text-white text-[10px]"
+            className={`p-1 text-[10px] ${isLight ? 'hover:text-black' : 'hover:text-white'}`}
             title="Reset viewport"
           >
             <RotateCcw className="w-3 h-3" />
           </button>
         </div>
+
+        <div className={`h-4 w-px ${isLight ? 'bg-zinc-200' : 'bg-border'}`} />
+
+        {/* Dual Mode Theme Switcher: Light / Dark */}
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all ${
+            isLight
+              ? 'bg-amber-100/80 hover:bg-amber-200/80 text-amber-900 border-amber-300/80 shadow-sm'
+              : 'bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 border-zinc-700'
+          }`}
+          title={isLight ? 'Switch to Dark Canvas' : 'Switch to Light Paper Canvas'}
+        >
+          {isLight ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+              <span className="font-medium text-[11px]">Light Paper</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+              <span className="font-medium text-[11px]">Dark Mode</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Helper Banner on canvas */}
-      <div className="absolute bottom-4 left-6 z-20 pointer-events-none text-[11px] text-zinc-500 flex items-center gap-2">
-        <span className="px-2 py-0.5 rounded bg-zinc-900/80 border border-zinc-800">
+      <div className="absolute bottom-4 left-6 z-20 pointer-events-none text-[11px] flex items-center gap-2">
+        <span className={`px-2.5 py-1 rounded-lg border backdrop-blur-md shadow-sm ${
+          isLight ? 'bg-white/90 border-zinc-300 text-zinc-600' : 'bg-zinc-900/80 border-zinc-800 text-zinc-400'
+        }`}>
           💡 Double-click canvas to drop a thought &bull; Drag tape to move &bull; Click "⚡ AI Breakdown" to sprout execution trees
         </span>
       </div>
@@ -490,7 +692,6 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
 
             const pos = localNotePositions[note.id] || { x: 80, y: 80 };
             const cardWidth = 320;
-            const cardHeight = 220;
 
             const startX = pos.x + cardWidth;
             const startY = pos.y + 70;
@@ -503,8 +704,8 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
             const taskX = pos.x + cardWidth + 90;
             const taskY = pos.y + 120;
 
-            const colorKey = note.color || 'amber';
-            const accent = COLOR_MAP[colorKey]?.accent || '#f59e0b';
+            const colorKey = (note.color as ColorTheme) || 'amber';
+            const accent = colorMap[colorKey]?.accent || (isLight ? '#d97706' : '#f59e0b');
 
             return (
               <g key={`lines-${note.id}`}>
@@ -513,7 +714,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                   d={`M ${startX} ${startY} C ${startX + 45} ${startY}, ${goalX - 45} ${goalY + 25}, ${goalX} ${goalY + 25}`}
                   fill="none"
                   stroke={accent}
-                  strokeWidth="2"
+                  strokeWidth={isLight ? '2.5' : '2'}
                   strokeDasharray="4 4"
                   className="animate-pulse"
                 />
@@ -522,10 +723,10 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                   d={`M ${startX} ${startY + 20} C ${startX + 45} ${startY + 20}, ${taskX - 45} ${taskY + 40}, ${taskX} ${taskY + 40}`}
                   fill="none"
                   stroke={accent}
-                  strokeWidth="2"
+                  strokeWidth={isLight ? '2.5' : '2'}
                 />
-                <circle cx={startX} cy={startY} r="4" fill={accent} />
-                <circle cx={startX} cy={startY + 20} r="4" fill={accent} />
+                <circle cx={startX} cy={startY} r={isLight ? 4.5 : 4} fill={accent} />
+                <circle cx={startX} cy={startY + 20} r={isLight ? 4.5 : 4} fill={accent} />
               </g>
             );
           })}
@@ -534,8 +735,8 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
         {/* Thought Cards & AI Sprout Nodes */}
         {notes.map((note) => {
           const pos = localNotePositions[note.id] || { x: 80, y: 80 };
-          const colorKey = note.color || 'amber';
-          const theme = COLOR_MAP[colorKey] || COLOR_MAP.amber;
+          const colorKey = (note.color as ColorTheme) || 'amber';
+          const theme = colorMap[colorKey] || colorMap.amber;
           const isTreeExpanded = expandedTrees[note.id] !== false && !!note.ai_suggested_structure;
           const isGenerating = generatingId === note.id;
           const isAccepting = acceptingId === note.id;
@@ -549,18 +750,22 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                   top: `${pos.y}px`,
                   width: '320px'
                 }}
-                className={`absolute z-20 rounded-xl border ${theme.bg} ${theme.border} shadow-elevated transition-shadow duration-150 group`}
+                className={`absolute z-20 rounded-xl border ${theme.bg} ${theme.border} transition-shadow duration-150 group ${
+                  isLight ? 'shadow-md hover:shadow-xl' : 'shadow-elevated'
+                }`}
               >
                 {/* Realistic Tape Top Bar (Draggable handle) */}
                 <div
                   onMouseDown={(e) => startDragNote(e, note.id)}
-                  className={`relative h-6 flex items-center justify-between px-3 cursor-grab active:cursor-grabbing border-b border-white/5`}
+                  className={`relative h-6 flex items-center justify-between px-3 cursor-grab active:cursor-grabbing border-b ${
+                    isLight ? 'border-black/5' : 'border-white/5'
+                  }`}
                 >
                   {/* Visual Washi Tape Pin in Center */}
                   <div className={`absolute top-[-7px] left-1/2 transform -translate-x-1/2 w-16 h-3.5 rounded-sm ${theme.tape} backdrop-blur-sm border shadow-sm rotate-[-1deg]`}></div>
 
-                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
-                    {note.is_pinned && <Pin className="w-2.5 h-2.5 text-amber-400" />}
+                  <div className={`flex items-center gap-1.5 text-[10px] font-mono ${isLight ? 'text-zinc-600 font-medium' : 'text-zinc-500'}`}>
+                    {note.is_pinned && <Pin className="w-2.5 h-2.5 text-amber-500" />}
                     <span>{new Date(note.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                   </div>
 
@@ -568,16 +773,18 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                   <div className="flex items-center gap-1 z-10">
                     {/* Color selector palette dropdown */}
                     <div className="relative group/color">
-                      <button className="p-0.5 text-zinc-500 hover:text-white rounded">
+                      <button className={`p-0.5 rounded ${isLight ? 'text-zinc-500 hover:text-black' : 'text-zinc-500 hover:text-white'}`}>
                         <Palette className="w-3 h-3" />
                       </button>
-                      <div className="hidden group-hover/color:flex absolute top-full right-0 mt-1 p-1 rounded-lg bg-zinc-900 border border-zinc-700 gap-1 z-30 shadow-lg">
+                      <div className={`hidden group-hover/color:flex absolute top-full right-0 mt-1 p-1 rounded-lg border gap-1 z-30 shadow-lg ${
+                        isLight ? 'bg-white border-zinc-200' : 'bg-zinc-900 border-zinc-700'
+                      }`}>
                         {(['amber', 'emerald', 'indigo', 'rose', 'cyan', 'slate'] as ColorTheme[]).map((c) => (
                           <button
                             key={c}
                             onClick={() => handleChangeColor(note.id, c)}
-                            className="w-3.5 h-3.5 rounded-full border border-white/20"
-                            style={{ backgroundColor: COLOR_MAP[c].accent }}
+                            className={`w-3.5 h-3.5 rounded-full border ${isLight ? 'border-black/20' : 'border-white/20'}`}
+                            style={{ backgroundColor: colorMap[c].accent }}
                           />
                         ))}
                       </div>
@@ -585,7 +792,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
 
                     <button
                       onClick={() => handleDelete(note.id)}
-                      className="p-0.5 text-zinc-500 hover:text-red-400 rounded"
+                      className={`p-0.5 rounded ${isLight ? 'text-zinc-500 hover:text-red-600' : 'text-zinc-500 hover:text-red-400'}`}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -603,7 +810,9 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                         api.updateNote(note.id, { title: e.target.value });
                       }
                     }}
-                    className={`w-full bg-transparent font-bold text-xs ${theme.header} focus:outline-none border-b border-transparent focus:border-white/20 pb-0.5`}
+                    className={`w-full bg-transparent font-bold text-xs ${theme.header} focus:outline-none border-b border-transparent ${
+                      isLight ? 'focus:border-black/20' : 'focus:border-white/20'
+                    } pb-0.5`}
                   />
 
                   {/* Lined Notebook Content Area */}
@@ -617,7 +826,7 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                     }}
                     className={`w-full bg-transparent text-xs ${theme.text} leading-relaxed focus:outline-none resize-none font-sans`}
                     style={{
-                      backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
+                      backgroundImage: `linear-gradient(${theme.line} 1px, transparent 1px)`,
                       backgroundSize: '100% 22px',
                       lineHeight: '22px'
                     }}
@@ -626,27 +835,35 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1 pt-1">
                     {note.tags?.map((t) => (
-                      <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-zinc-400 font-mono">
+                      <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${theme.tagBg} ${theme.tagText}`}>
                         #{t}
                       </span>
                     ))}
                   </div>
 
                   {/* Action Bar: Structure with AI */}
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                  <div className={`pt-2 border-t flex items-center justify-between text-[11px] ${
+                    isLight ? 'border-black/5' : 'border-white/5'
+                  }`}>
                     {note.ai_suggested_structure ? (
                       <button
                         onClick={() => handleToggleTree(note.id)}
-                        className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 text-[10px]"
+                        className={`font-semibold flex items-center gap-1 text-[10px] ${
+                          isLight ? 'text-emerald-700 hover:text-emerald-900' : 'text-emerald-400 hover:text-emerald-300'
+                        }`}
                       >
-                        <Sparkles className="w-3 h-3 text-emerald-400" />
+                        <Sparkles className="w-3 h-3 text-emerald-500" />
                         <span>{isTreeExpanded ? 'Collapse AI Branches' : 'Expand AI Branches'}</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleGenerateStructure(note.id)}
                         disabled={isGenerating}
-                        className="px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold transition-colors flex items-center gap-1"
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors flex items-center gap-1 ${
+                          isLight
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                            : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        }`}
                       >
                         <Sparkles className="w-3 h-3" />
                         <span>{isGenerating ? 'Structuring...' : '⚡ Structure with AI'}</span>
@@ -654,7 +871,9 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                     )}
 
                     {note.accepted_structure && (
-                      <span className="text-[9px] font-bold text-emerald-400 flex items-center gap-0.5">
+                      <span className={`text-[9px] font-bold flex items-center gap-0.5 ${
+                        isLight ? 'text-emerald-700' : 'text-emerald-400'
+                      }`}>
                         <Check className="w-2.5 h-2.5" />
                         Integrated
                       </span>
@@ -674,13 +893,19 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                         top: `${pos.y - 40}px`,
                         width: '280px'
                       }}
-                      className="absolute z-20 p-3 rounded-xl bg-zinc-900/90 border border-emerald-500/40 backdrop-blur-md shadow-elevated animate-in fade-in zoom-in-95 duration-200"
+                      className={`absolute z-20 p-3 rounded-xl backdrop-blur-md shadow-elevated animate-in fade-in zoom-in-95 duration-200 border ${
+                        isLight 
+                          ? 'bg-white/95 border-emerald-400 text-zinc-900 shadow-md' 
+                          : 'bg-zinc-900/90 border-emerald-500/40 text-white'
+                      }`}
                     >
-                      <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] uppercase font-bold tracking-wider mb-1">
+                      <div className={`flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-wider mb-1 ${
+                        isLight ? 'text-emerald-700' : 'text-emerald-400'
+                      }`}>
                         <Target className="w-3 h-3" />
                         <span>Proposed Strategic Goal</span>
                       </div>
-                      <p className="text-xs text-white font-medium leading-snug">
+                      <p className={`text-xs font-medium leading-snug ${isLight ? 'text-zinc-900' : 'text-white'}`}>
                         {note.ai_suggested_structure.goal}
                       </p>
                     </div>
@@ -693,16 +918,26 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                       top: `${pos.y + 60}px`,
                       width: '320px'
                     }}
-                    className="absolute z-20 p-3.5 rounded-xl bg-zinc-900/95 border border-indigo-500/40 backdrop-blur-md shadow-elevated animate-in fade-in zoom-in-95 duration-200 space-y-3"
+                    className={`absolute z-20 p-3.5 rounded-xl backdrop-blur-md shadow-elevated animate-in fade-in zoom-in-95 duration-200 space-y-3 border ${
+                      isLight 
+                        ? 'bg-white/95 border-indigo-300 text-zinc-900 shadow-md' 
+                        : 'bg-zinc-900/95 border-indigo-500/40 text-white'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-indigo-400 text-[10px] uppercase font-bold tracking-wider">
+                      <div className={`flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-wider ${
+                        isLight ? 'text-indigo-700' : 'text-indigo-400'
+                      }`}>
                         <CheckSquare className="w-3 h-3" />
                         <span>Extracted Action Plan</span>
                       </div>
 
                       {note.accepted_structure ? (
-                        <span className="text-[9px] font-bold text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                          isLight 
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        }`}>
                           Active in Tasks
                         </span>
                       ) : (
@@ -720,10 +955,14 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
                     {/* Milestones list */}
                     {note.ai_suggested_structure.milestones && (
                       <div className="space-y-1">
-                        <span className="text-[9px] uppercase font-semibold text-zinc-500 block">Milestones</span>
+                        <span className={`text-[9px] uppercase font-semibold block ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                          Milestones
+                        </span>
                         {note.ai_suggested_structure.milestones.slice(0, 2).map((m, idx) => (
-                          <div key={idx} className="text-[11px] text-zinc-300 flex items-center gap-1.5">
-                            <span className="w-3.5 h-3.5 rounded-full bg-zinc-800 text-[9px] text-zinc-400 flex items-center justify-center font-bold">
+                          <div key={idx} className={`text-[11px] flex items-center gap-1.5 ${isLight ? 'text-zinc-800' : 'text-zinc-300'}`}>
+                            <span className={`w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center font-bold ${
+                              isLight ? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-800 text-zinc-400'
+                            }`}>
                               {idx + 1}
                             </span>
                             <span className="truncate">{m}</span>
@@ -734,12 +973,16 @@ export const NotebookCanvas: React.FC<NotebookCanvasProps> = ({
 
                     {/* Actionable Tasks */}
                     {note.ai_suggested_structure.tasks && (
-                      <div className="space-y-1 pt-1 border-t border-border/60">
+                      <div className={`space-y-1 pt-1 border-t ${isLight ? 'border-zinc-200' : 'border-border/60'}`}>
                         <span className="text-[9px] uppercase font-semibold text-zinc-500 block">Tasks</span>
                         {note.ai_suggested_structure.tasks.slice(0, 3).map((t, idx) => (
-                          <div key={idx} className="p-1.5 rounded bg-zinc-800/60 flex items-center justify-between text-[11px]">
-                            <span className="text-zinc-200 truncate mr-2">{t.title}</span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-zinc-700 text-zinc-300 shrink-0">
+                          <div key={idx} className={`p-1.5 rounded flex items-center justify-between text-[11px] ${
+                            isLight ? 'bg-zinc-100 text-zinc-900 border border-zinc-200/60' : 'bg-zinc-800/60 text-zinc-200'
+                          }`}>
+                            <span className="truncate mr-2 font-medium">{t.title}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                              isLight ? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-700 text-zinc-300'
+                            }`}>
                               {t.estimated_minutes || 30}m
                             </span>
                           </div>
